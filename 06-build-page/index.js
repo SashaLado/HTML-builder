@@ -2,52 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const {mkdir} = require('fs');
 
-// function deleteDirectory () {
-//
-//   const directory = '06-build-page/project-dist';
-//
-//   fs.readdir(directory,
-//     (err, files) => {
-//       if (err)
-//         console.log(err);
-//       else {
-//         files.forEach(file => {
-//           fs.stat(`${directory}/${file}`, (err, stats) => {
-//             if (err) throw err;
-//             let isDir = stats.isDirectory();
-//             if (isDir === true) {
-//               fs.readdir(`${directory}/${file}`,
-//                 (err, directories) => {
-//                   if (err)
-//                     console.log(err);
-//                   else directories.forEach(dir => {
-//                     fs.readdir(`${directory}/${file}/${dir}`, (err, files) => {
-//                       if (err) throw err;
-//                       for (let fileD of files) {
-//                         fs.unlink(path.join(`${directory}/${file}/${dir}`, fileD), err => {
-//                           if (err) throw err;
-//                         });
-//                       }
-//                     });
-//                     fs.rmdir(`${directory}/${file}/${dir}`, err => {
-//                       if(err) throw err; // не удалось удалить папку
-//                     });
-//                   });
-//                 });
-//               fs.rmdir(`${directory}/${file}`, err => {
-//                 if(err) throw err; // не удалось удалить папку
-//               });
-//             }
-//           });
-//         });
-//       }
-//     });
-// }
-
-
-
-
-
 function addFileHtml(fileName) {
   fs.stat(`06-build-page/project-dist/${fileName}`, function (err) {
     if (!err) {
@@ -64,7 +18,6 @@ function addFileHtml(fileName) {
 
 fs.stat('06-build-page/project-dist', function (err) {
   if (!err) {
-    // deleteDirectory();
     addFileHtml('index.html');
     addFileHtml('style.css');
     replace();
@@ -188,17 +141,17 @@ function assetsFolder() {
         });
     } else if (err.code === 'ENOENT') {
       fs.mkdir('06-build-page/project-dist/assets', err => {
-        if (err) throw err; // не удалось создать папку
+        if (err) throw err;
         fs.mkdir('06-build-page/project-dist/assets/fonts', err => {
-          if (err) throw err; // не удалось создать папку
+          if (err) throw err;
           copyFiles6('assets/fonts', 'project-dist/assets/fonts');
         });
         fs.mkdir('06-build-page/project-dist/assets/img', err => {
-          if (err) throw err; // не удалось создать папку
+          if (err) throw err;
           copyFiles6('assets/img', 'project-dist/assets/img');
         });
         fs.mkdir('06-build-page/project-dist/assets/svg', err => {
-          if (err) throw err; // не удалось создать папку
+          if (err) throw err;
           copyFiles6('assets/svg', 'project-dist/assets/svg');
         });
       });

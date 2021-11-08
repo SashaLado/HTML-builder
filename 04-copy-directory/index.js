@@ -35,7 +35,7 @@ fs.stat('04-copy-directory/files-copy', function(err) {
   }
   else if (err.code === 'ENOENT') {
     fs.mkdir('04-copy-directory/files-copy', err => {
-      if(err) throw err; // не удалось создать папку
+      if(err) throw err;
       console.log('Папка успешно создана');
       copyFiles();
     });
