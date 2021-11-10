@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const {mkdir} = require('fs');
+const FSP = require('fs').promises;
 
-function addFileHtml(fileName) {
+function addFile(fileName) {
   fs.stat(`06-build-page/project-dist/${fileName}`, function (err) {
     if (!err) {
       fs.truncate(`06-build-page/project-dist/${fileName}`, 0, function () {
@@ -16,162 +16,187 @@ function addFileHtml(fileName) {
   });
 }
 
-fs.stat('06-build-page/project-dist', function (err) {
-  if (!err) {
-    addFileHtml('index.html');
-    addFileHtml('style.css');
-    replace();
-    assetsFolder();
-  } else if (err.code === 'ENOENT') {
-    fs.mkdir('06-build-page/project-dist', err => {
-      if (err) throw err;
-      addFileHtml('index.html');
-      addFileHtml('style.css');
-      replace();
-      assetsFolder();
-    });
+fs.access('06-build-page/project-dist', function(error){
+  if (!error) {
+    dirExist();
+  } else {
+    firstDir();
   }
 });
 
+function firstDir(){
+  fs.promises.mkdir('06-build-page/project-dist');
+  addFile('index.html');
+  replace();
+  addFile('style.css');
+  copyStyles ();
+  fs.promises.mkdir('06-build-page/project-dist/assets');
+  copyDir('06-build-page/assets', '06-build-page/project-dist/assets');
+
+}
+async function dirExist(){
+  await FSP.rmdir('06-build-page/project-dist', {recursive:true});
+  await FSP.mkdir('06-build-page/project-dist',{recursive:true});
+  await FSP.mkdir('06-build-page/project-dist/assets',{recursive:true});
+  copyDir('06-build-page/assets', '06-build-page/project-dist/assets');
+  addFile('index.html');
+  replace();
+  addFile('style.css');
+  copyStyles ();
+}
+const dist = path.join(__dirname, 'project-dist');
 function replace() {
-  let data = '';
-  let readStream = fs.createReadStream(path.join(__dirname, 'template.html')
-  );
-  readStream.setEncoding('UTF8');
-  readStream.on('data', function (chunk) {
-    data += chunk;
-  });
-  readStream.on('end', function () {
-    let template = data;
-    fs.readdir('06-build-page/components',
-      (err, files) => {
-        if (err)
-          console.log(err);
-        else {
-          files.forEach(file => {
-            let fileExt = path.extname(file);
-            if (fileExt === '.html') {
-              let data = '';
-              let readStream1 = fs.createReadStream(path.join(__dirname, `components/${file}`)
-              );
-              readStream1.setEncoding('UTF8');
-              readStream1.on('data', function (chunk) {
-                data += chunk;
-              });
-              readStream1.on('error', function (err) {
-                console.log(err.stack);
-              });
+  const input = fs.createReadStream(path.join(__dirname, 'template.html'), 'utf-8');
+  const output = fs.createWriteStream(path.join(dist, 'index.html'));
+  let str = '';
+  input.on('data', data => {
+    str = data.toString();
 
-              readStream1.on('end', function () {
-                if (file === 'about.html') {
-                  template = template.replace(/{{about}}/i, data);
-                } else if (file === 'articles.html') {
-                  template = template.replace(/{{articles}}/i, data);
-                } else if (file === 'footer.html') {
-                  template = template.replace(/{{footer}}/i, data);
-                } else if (file === 'header.html') {
-                  template = template.replace(/{{header}}/i, data);
-                  fs.appendFile('06-build-page/project-dist/index.html', `${template}`, function (err) {
-                    if (err) throw err;
-                  });
-                }
-
-              });
-            }
-          });
-        }
-      });
-
-  });
-
-  readStream.on('error', function (err) {
-    console.log(err.stack);
-  });
-}
-
-
-fs.readdir('06-build-page/styles',
-  (err, files) => {
-    if (err)
-      console.log(err);
-    else {
-      files.forEach(file => {
-        let fileExt = path.extname(file);
-        if (fileExt === '.css') {
-          let data = '';
-          let readStream = fs.createReadStream(path.join(__dirname, `styles/${file}`)
-          );
-          readStream.setEncoding('UTF8');
-          readStream.on('data', function (chunk) {
-            data += chunk;
-          });
-          readStream.on('error', function (err) {
-            console.log(err.stack);
-          });
-
-          readStream.on('end', function () {
-            fs.appendFile('06-build-page/project-dist/style.css', `${data}`, function (err) {
-              if (err) throw err;
-            });
-          });
-
-        }
-      });
+    function mapper(elem) {
+      return `{{${elem}}}`;
     }
-  });
 
-function assetsFolder() {
-  fs.stat('06-build-page/project-dist/assets', function (err) {
-    if (!err) {
-      fs.readdir('06-build-page/project-dist/assets',
-        (err, directories) => {
-          if (err)
-            console.log(err);
-          else directories.forEach(dir => {
-            fs.readdir(`06-build-page/project-dist/assets/${dir}`, (err, files) => {
-              if (err) throw err;
-              for (let fileD of files) {
-                fs.unlink(path.join(`06-build-page/project-dist/assets/${dir}`, fileD), err => {
-                  if (err) throw err;
-                });
-              }
-            });
-            copyFiles6(`assets/${dir}`, `project-dist/assets/${dir}`);
-          });
-        });
-    } else if (err.code === 'ENOENT') {
-      fs.mkdir('06-build-page/project-dist/assets', err => {
+    const componentsPath = path.join(__dirname, 'components');
+
+    fs.readdir(
+      componentsPath,
+      {withFileTypes: true},
+      (err, data) => {
         if (err) throw err;
-        fs.mkdir('06-build-page/project-dist/assets/fonts', err => {
-          if (err) throw err;
-          copyFiles6('assets/fonts', 'project-dist/assets/fonts');
+
+        const temps = [];
+        data.forEach(temp => {
+          const fileName = temp.name.match(/([\w]*\.)*/)[0].replace('.', '');
+          temps.push(mapper(fileName));
         });
-        fs.mkdir('06-build-page/project-dist/assets/img', err => {
-          if (err) throw err;
-          copyFiles6('assets/img', 'project-dist/assets/img');
+
+        FSP
+          .readdir(path.join(__dirname, 'components'))
+          .then(result => {
+            result.forEach((comp, ndx) => {
+              const readableStream = fs.createReadStream(path.join(__dirname, 'components', comp), 'utf-8');
+              readableStream.on('data', data => {
+                str = str.replace(temps[ndx], data);
+
+                if (!temps.find(temp => str.includes(temp))) {
+                  output.write(str);
+                }
+              });
+            });
+          });
+      }
+    );
+  });
+}
+
+// let data = '';
+// let readStream = fs.createReadStream(path.join(__dirname, 'template.html')
+// );
+// readStream.setEncoding('UTF8');
+// readStream.on('data', function (chunk) {
+//   data += chunk;
+// });
+// readStream.on('end', function () {
+//   let template = data;
+//   fs.readdir('06-build-page/components',
+//     (err, files) => {
+//       if (err)
+//         console.log(err);
+//       else {
+//         files.forEach(file => {
+//           let fileExt = path.extname(file);
+//           if (fileExt === '.html') {
+//             let data = '';
+//             let readStream1 = fs.createReadStream(path.join(__dirname, `components/${file}`)
+//             );
+//             readStream1.setEncoding('UTF8');
+//             readStream1.on('data', function (chunk) {
+//               data += chunk;
+//             });
+//             readStream1.on('error', function (err) {
+//               console.log(err.stack);
+//             });
+//
+//             readStream1.on('end', function () {
+//               if (file === 'about.html') {
+//                 template = template.replace(/{{about}}/i, data);
+//               } else if (file === 'articles.html') {
+//                 template = template.replace(/{{articles}}/i, data);
+//               } else if (file === 'footer.html') {
+//                 template = template.replace(/{{footer}}/i, data);
+//               } else if (file === 'header.html') {
+//                 template = template.replace(/{{header}}/i, data);
+//                 fs.appendFile('06-build-page/project-dist/index.html', `${template}`, function (err) {
+//                   if (err) throw err;
+//                 });
+//               }
+//
+//             });
+//           }
+//         });
+//       }
+//     });
+//
+// });
+//
+// readStream.on('error', function (err) {
+//   console.log(err.stack);
+// });
+
+//
+function copyStyles () {
+  fs.readdir('06-build-page/styles',
+    (err, files) => {
+      if (err)
+        console.log(err);
+      else {
+        files.forEach(file => {
+          let fileExt = path.extname(file);
+          if (fileExt === '.css') {
+            let data = '';
+            let readStream = fs.createReadStream(path.join(__dirname, `styles/${file}`)
+            );
+            readStream.setEncoding('UTF8');
+            readStream.on('data', function (chunk) {
+              data += chunk;
+            });
+            readStream.on('error', function (err) {
+              console.log(err.stack);
+            });
+
+            readStream.on('end', function () {
+              fs.appendFile('06-build-page/project-dist/style.css', `${data}`, function (err) {
+                if (err) throw err;
+              });
+            });
+
+          }
         });
-        fs.mkdir('06-build-page/project-dist/assets/svg', err => {
-          if (err) throw err;
-          copyFiles6('assets/svg', 'project-dist/assets/svg');
-        });
+      }
+    });
+}
+
+
+
+
+
+function copyDir(scr, dest){
+  fs.readdir(scr,{withFileTypes:true},(err,files)=>{
+    if(err) console.log(err);
+    else{
+      files.forEach((file)=> {
+        const srcPath = path.resolve(scr,file.name);
+        const destPath = path.resolve(dest,file.name);
+        if (file.isDirectory()===true){
+          FSP.mkdir(destPath,{recursive:true});
+          copyDir(srcPath,destPath);
+        } else{
+          FSP.copyFile(srcPath,destPath);
+        }
       });
     }
   });
 }
 
-function copyFiles6(firstFolder6, destinationFolder6) {
-  const firstDir6 = path.join(__dirname, firstFolder6);
-  const destDir6 = path.join(__dirname, destinationFolder6);
-  fs.readdir(firstDir6, (err, files) => {
-    if (err) {
-      throw err;
-    }
-    for (let i = 0; i < files.length; i += 1) {
-      fs.copyFile(firstDir6 + '/' + files[i], destDir6 + '/' + files[i], function (err) {
-        if (err)
-          throw err;
-      });
-    }
 
-  });
-}
+
