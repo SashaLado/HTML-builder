@@ -89,61 +89,6 @@ function replace() {
   });
 }
 
-// let data = '';
-// let readStream = fs.createReadStream(path.join(__dirname, 'template.html')
-// );
-// readStream.setEncoding('UTF8');
-// readStream.on('data', function (chunk) {
-//   data += chunk;
-// });
-// readStream.on('end', function () {
-//   let template = data;
-//   fs.readdir('06-build-page/components',
-//     (err, files) => {
-//       if (err)
-//         console.log(err);
-//       else {
-//         files.forEach(file => {
-//           let fileExt = path.extname(file);
-//           if (fileExt === '.html') {
-//             let data = '';
-//             let readStream1 = fs.createReadStream(path.join(__dirname, `components/${file}`)
-//             );
-//             readStream1.setEncoding('UTF8');
-//             readStream1.on('data', function (chunk) {
-//               data += chunk;
-//             });
-//             readStream1.on('error', function (err) {
-//               console.log(err.stack);
-//             });
-//
-//             readStream1.on('end', function () {
-//               if (file === 'about.html') {
-//                 template = template.replace(/{{about}}/i, data);
-//               } else if (file === 'articles.html') {
-//                 template = template.replace(/{{articles}}/i, data);
-//               } else if (file === 'footer.html') {
-//                 template = template.replace(/{{footer}}/i, data);
-//               } else if (file === 'header.html') {
-//                 template = template.replace(/{{header}}/i, data);
-//                 fs.appendFile('06-build-page/project-dist/index.html', `${template}`, function (err) {
-//                   if (err) throw err;
-//                 });
-//               }
-//
-//             });
-//           }
-//         });
-//       }
-//     });
-//
-// });
-//
-// readStream.on('error', function (err) {
-//   console.log(err.stack);
-// });
-
-//
 function copyStyles () {
   fs.readdir('06-build-page/styles',
     (err, files) => {
